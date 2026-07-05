@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Một Chuyến Du Hành Nhỏ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- Giao Diện Tổng Thể & Tối Ưu Mobile --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Quicksand', sans-serif;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #0d0e12;
+            color: #e2e4e9;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- Màn Hình Khóa Sang Trọng --- */
+        #lock-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1a1c24 0%, #0d0e12 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 24px;
+            text-align: center;
+            transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .lock-container {
+            max-width: 440px;
+            width: 100%;
+            animation: fadeIn 1.2s ease;
+        }
+
+        h1.lock-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .lock-content {
+            font-size: 0.98rem;
+            line-height: 1.7;
+            color: #a0a5b5;
+            margin-bottom: 30px;
+            text-align: justify;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group input {
+            padding: 14px 20px;
+            font-size: 1rem;
+            border: 1px solid #2a2d3a;
+            border-radius: 30px;
+            background: #14161f;
+            color: #ffffff;
+            text-align: center;
+            outline: none;
+            width: 100%;
+            max-width: 260px;
+            transition: all 0.3s ease;
+            letter-spacing: 2px;
+        }
+
+        .input-group input:focus {
+            border-color: #6c72cb;
+            box-shadow: 0 0 12px rgba(108, 114, 203, 0.2);
+        }
+
+        .btn-start {
+            padding: 12px 40px;
+            font-size: 0.95rem;
+            background: linear-gradient(135deg, #6c72cb 0%, #cb69c1 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(108, 114, 203, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 114, 203, 0.4);
+        }
+
+        .error-msg {
+            color: #ff5c5c;
+            margin-top: 12px;
+            font-size: 0.88rem;
+            height: 20px;
+        }
+
+        /* --- Sân Khấu Chính & Các Trang Biểu Diễn --- */
+        #story-stage {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: none;
+        }
+
+        .story-page {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px 24px 40px 24px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .story-page.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .page-container {
+            max-width: 500px;
+            width: 100%;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Khung chứa ảnh tối ưu điện thoại */
+        .photo-holder {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            opacity: 0;
+            transform: scale(0.85);
+            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s;
+        }
+
+        @media (max-height: 660px) {
+            .photo-holder { width: 120px; height: 120px; margin-bottom: 15px; }
+        }
+
+        .story-page.active .photo-holder {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .photo-holder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Tiêu đề truyện */
+        .story-title {
+            font-size: 1.35rem;
+            color: #ffffff;
+            margin-bottom: 20px;
+            font-weight: 600;
+            text-align: center;
+            min-height: 28px;
+        }
+
+        /* Nội dung văn bản liền mạch dạng đoạn */
+        .story-desc {
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: #c4c7d0;
+            text-align: justify;
+            text-justify: inter-word;
+            opacity: 0;
+            transform: translateY(15px);
+            transition: opacity 0.8s ease 0.6s, transform 0.8s ease 0.6s;
+            max-height: 42vh;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        /* Tùy chỉnh thanh cuộn nếu văn bản quá dài trên màn hình cực ngắn */
+        .story-desc::-webkit-scrollbar { width: 3px; }
+        .story-desc::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+        .story-page.active .story-desc {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Mốc thời gian */
+        .timeline-tag {
+            margin-top: 25px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #6c72cb;
+            letter-spacing: 3px;
+            opacity: 0;
+            transition: opacity 0.8s ease 1.2s;
+            text-align: center;
+        }
+
+        .story-page.active .timeline-tag {
+            opacity: 1;
+        }
+
+        /* --- Điều Hướng Gọn Gàng Cho Điện Thoại --- */
+        .nav-controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 16px;
+            width: 100%;
+            max-width: 280px;
+            opacity: 0;
+            transition: opacity 0.8s ease 1.4s;
+        }
+
+        .story-page.active .nav-controls {
+            opacity: 1;
+        }
+
+        .btn-nav {
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: #171923;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: 0.88rem;
+            font-weight: 500;
+            flex: 1;
+            text-align: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn-nav:active {
+            background: #ffffff;
+            color: #0d0e12;
+            transform: scale(0.95);
+        }
+
+        /* --- Kịch Bản Kết Thúc Bí Mật (Secret Ending) --- */
+        #secret-ending {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transform: translateY(15px);
+            transition: opacity 1.5s ease, transform 1.5s ease;
+        }
+
+        #secret-ending.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .secret-title {
+            font-size: 0.9rem;
+            color: #cb69c1;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .secret-content {
+            font-size: 0.92rem;
+            line-height: 1.7;
+            color: #a0a5b5;
+            text-align: justify;
+            margin-bottom: 25px;
+        }
+
+        /* Nút kết thúc hiển thị sau khi P/S xuất hiện */
+        .btn-end-trigger {
+            display: block;
+            margin: 20px auto 10px auto;
+            padding: 10px 24px;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #cb69c1 0%, #6c72cb 100%);
+            color: #ffffff;
+            border: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(203, 105, 193, 0.3);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 1s ease 1s, transform 1s ease 1s;
+        }
+
+        #secret-ending.show .btn-end-trigger {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- Màn Hình Trắng Kết Thúc (The End) --- */
+        #the-end-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #ffffff;
+            color: #111111;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 2s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 24px;
+            text-align: center;
+        }
+
+        #the-end-screen.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .end-msg-1 {
+            font-size: 1.15rem;
+            font-weight: 500;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: #2c2e3e;
+            opacity: 0;
+            transition: opacity 1.5s ease 0.8s;
+        }
+
+        .end-msg-2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #7c809b;
+            margin-bottom: 45px;
+            opacity: 0;
+            transition: opacity 1.5s ease 2.8s;
+        }
+
+        .btn-restart {
+            padding: 12px 30px;
+            border-radius: 30px;
+            border: 1px solid #111111;
+            background: transparent;
+            color: #111111;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 1s ease 4.5s, background 0.2s, color 0.2s;
+        }
+
+        #the-end-screen.show .end-msg-1,
+        #the-end-screen.show .end-msg-2,
+        #the-end-screen.show .btn-restart {
+            opacity: 1;
+        }
+
+        .btn-restart:hover {
+            background: #111111;
+            color: #ffffff;
+        }
+
+        /* --- Hiệu ứng phụ --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. MÀN HÌNH KHÓA -->
+    <div id="lock-screen">
+        <div class="lock-container">
+            <h1 class="lock-title">Một Chuyến Du Hành Nhỏ</h1>
+            <div class="lock-content">
+                Người ta thường nói thời gian chỉ có thể đi về phía trước. Nhưng hôm nay, em muốn cùng anh làm một điều ngược lại. Chúng mình sẽ quay về gặp những phiên bản cũ của anh, để xem chàng trai ấy đã đi qua những gì trước khi trở thành người của hiện tại. Nhập ngày sinh của mình nhé. Cuộc hành trình bắt đầu từ đây. ❤️
+            </div>
+            <div class="input-group">
+                <input type="password" id="password-input" placeholder="DDMMYYYY (Ví dụ: 06072003)" maxlength="8" pattern="\d*">
+            </div>
+            <button class="btn-start" onclick="unlockWeb()">Bắt đầu hành trình</button>
+            <div class="error-msg" id="error-text"></div>
+        </div>
+    </div>
+
+    <!-- 2. SÂN KHẤU CHÍNH CHỨA CÁC TRANG TRUYỆN -->
+    <div id="story-stage">
+
+        <!-- TRANG 1: TUỔI 20 -->
+        <div class="story-page" id="page-1">
+            <div class="page-container">
+                <div class="photo-holder">
+                    <img src="https://picsum.photos/300/300?random=1" alt="Tuổi 20">
+                </div>
+                <div class="story-title" data-text="Nếu được gặp anh của tuổi 20..."></div>
+                <div class="story-desc">Em nghĩ mình sẽ ôm anh một cái trước. Rồi em sẽ nói rằng anh không cần phải lo lắng nhiều đến thế. Em biết ở tuổi 20, anh từng áp lực vì tương lai, từng nhìn bạn bè xung quanh và tự hỏi liệu mình có đang đi quá chậm không. Có những ngày anh rất tự tin, nhưng cũng có những ngày chẳng biết mình thật sự giỏi điều gì. Nhưng nếu được quay về thời điểm ấy, em chỉ muốn nói rằng mọi chuyện rồi sẽ ổn. Không ai bắt anh phải trưởng thành thật nhanh cả. Không ai chấm điểm cuộc đời bằng việc anh thành công sớm hay muộn. Điều quan trọng nhất là anh vẫn luôn bước tiếp, dù đôi khi chỉ là từng bước rất nhỏ. Nếu ngày ấy anh bỏ cuộc, thì sẽ chẳng có chàng trai mà em gặp sau này. Và em biết ơn anh của tuổi 20 vì điều đó.</div>
+                <div class="timeline-tag">2022</div>
+                <div class="nav-controls">
+                    <button class="btn-nav" onclick="nextPage(2)">Tiếp tục hành trình →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRANG 2: TUỔI 21 -->
+        <div class="story-page" id="page-2">
+            <div class="page-container">
+                <div class="photo-holder">
+                    <img src="https://picsum.photos/300/300?random=2" alt="Tuổi 21">
+                </div>
+                <div class="story-title" data-text="Nếu được gặp anh của tuổi 21..."></div>
+                <div class="story-desc">Em sẽ kể cho anh nghe một bí mật. Rằng chỉ ít lâu nữa thôi, sẽ có một cô gái bước vào cuộc đời anh. Cô gái ấy không quá hoàn hảo, cũng chẳng mang phép màu gì cả. Nhưng cô ấy sẽ luôn muốn ở bên anh, lắng nghe anh kể về một ngày dài, cười cùng anh vì những chuyện rất nhỏ, và cũng sẽ có lúc làm anh phát điên vì những lần dỗi vu vơ. Ngày 10.09.2023, hai cuộc sống vốn chẳng liên quan bỗng bắt đầu đồng hành cùng nhau. Đến bây giờ nhìn lại, em mới nhận ra điều quý giá nhất không phải là những món quà hay những buổi hẹn hò đặc biệt, mà là việc giữa biết bao người trên thế giới, chúng mình vẫn lựa chọn ở lại trong cuộc đời của nhau. Đó luôn là một điều rất đẹp với em.</div>
+                <div class="timeline-tag">2023</div>
+                <div class="nav-controls">
+                    <button class="btn-nav" onclick="prevPage(1)">← Quay lại</button>
+                    <button class="btn-nav" onclick="nextPage(3)">Tiếp tục →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRANG 3: TUỔI 22 -->
+        <div class="story-page" id="page-3">
+            <div class="page-container">
+                <div class="photo-holder">
+                    <img src="https://picsum.photos/300/300?random=3" alt="Tuổi 22">
+                </div>
+                <div class="story-title" data-text="Nếu được gặp anh của tuổi 22..."></div>
+                <div class="story-desc">Đây có lẽ là phiên bản khiến em thương nhất. Em biết có một khoảng thời gian anh rất áp lực. Bạn bè dần ổn định công việc, còn anh vẫn loay hoay đi tìm con đường của mình. Có lúc anh muốn cố gắng, có lúc lại trì hoãn, rồi tự trách bản thân vì sao mình cứ chậm hơn người khác. Thật ra, em cũng từng sốt ruột thay anh. Nhưng rồi em nhận ra mỗi người đều có đồng hồ của riêng mình. Có người nở hoa rất sớm. Có người cần thêm một chút thời gian. Và điều đó không khiến bông hoa ấy kém đẹp hơn. Nếu được gặp anh của tuổi 22, em sẽ nói rằng đừng sợ mình đi chậm. Chỉ cần đừng dừng lại.</div>
+                <div class="timeline-tag">2024</div>
+                <div class="nav-controls">
+                    <button class="btn-nav" onclick="prevPage(2)">← Quay lại</button>
+                    <button class="btn-nav" onclick="nextPage(4)">Tiếp tục →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRANG 4: TUỔI 23 -->
+        <div class="story-page" id="page-4">
+            <div class="page-container">
+                <div class="photo-holder">
+                    <img src="https://picsum.photos/300/300?random=4" alt="Tuổi 23">
+                </div>
+                <div class="story-title" data-text="Nếu được gặp anh của tuổi 23..."></div>
+                <div class="story-desc">Em sẽ mỉm cười và nói: "Cuối cùng anh cũng làm được rồi." Sau rất nhiều lần phân vân, trì hoãn và tự nghi ngờ bản thân, anh cũng bắt đầu một công việc mà anh thật sự nghiêm túc theo đuổi. Có thể với nhiều người, đó chỉ là một công việc. Nhưng với em, đó là cột mốc đánh dấu việc anh đã dũng cảm bước ra khỏi vùng an toàn của mình. Em nhìn thấy anh cố gắng nhiều hơn. Có trách nhiệm hơn. Biết nghĩ cho tương lai hơn. Có những điều anh vẫn đang học mỗi ngày. Nhưng em thích phiên bản này của anh. Không phải vì anh kiếm được tiền. Mà vì anh đang dần trở thành người đàn ông mà chính anh từng mong muốn.</div>
+                <div class="timeline-tag">2025</div>
+                <div class="nav-controls">
+                    <button class="btn-nav" onclick="prevPage(3)">← Quay lại</button>
+                    <button class="btn-nav" onclick="nextPage(5)">Đến Hiện Tại →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRANG 5: TUỔI 24 -->
+        <div class="story-page" id="page-5">
+            <div class="page-container">
+                <div class="photo-holder">
+                    <img src="https://picsum.photos/300/300?random=5" alt="Tuổi 24">
+                </div>
+                <div class="story-title" data-text="Chào mừng anh đến với tuổi 24."></div>
+                <div class="story-desc">Đến đây chắc anh cũng nhận ra... Đây không đơn thuần là một trang web. Đây là món quà mà em muốn lưu lại cho anh, để sau này, bất cứ khi nào mở lại, anh đều có thể nhìn thấy hành trình mình đã đi qua. Em biết anh vẫn còn rất nhiều dự định. Vẫn còn nhiều điều muốn làm. Vẫn còn những ước mơ đang chờ thực hiện. Nhưng em hy vọng từ hôm nay trở đi, anh sẽ bớt khắt khe với bản thân hơn một chút. Đừng chỉ nhìn vào những gì mình chưa có. Hãy nhìn cả quãng đường mình đã đi được. Vì thật ra anh đã trưởng thành hơn rất nhiều so với chàng trai vài năm trước. Em mong tuổi 24 sẽ mang đến cho anh thật nhiều sức khỏe, nhiều niềm vui, một công việc ngày càng ổn định, những người đồng nghiệp tốt và thật nhiều cơ hội để phát triển. Quan trọng hơn tất cả, em mong anh sẽ luôn giữ được sự tử tế, sự chân thành và trái tim ấm áp của mình. Cảm ơn anh vì đã xuất hiện trong cuộc đời em. Cảm ơn anh vì đã cho em cơ hội được đồng hành cùng anh trong những năm tháng đẹp nhất của tuổi trẻ. Chúc mừng sinh nhật anh. Em yêu anh rất nhiều. ❤️
+                
+                    <!-- Secret Ending hiện mượt mà ngay trong luồng cuộn văn bản -->
+                    <div id="secret-ending">
+                        <div class="secret-title">P/S</div>
+                        <div class="secret-content">Nếu một ngày nào đó, thật nhiều năm sau, anh vô tình mở lại trang web này... Có thể mọi thứ đều đã khác. Chúng mình sẽ trưởng thành hơn. Cuộc sống cũng sẽ đưa mỗi người đi qua rất nhiều điều. Nhưng em hy vọng khi nhìn lại khoảng thời gian này, anh sẽ mỉm cười. Không phải vì mọi chuyện đều hoàn hảo. Mà vì anh đã sống hết mình cho tuổi trẻ của mình. Và dù sau này cuộc đời có đưa anh đến bất cứ nơi đâu... Em chỉ mong anh vẫn luôn là một người hạnh phúc. Bởi với em, đó mới là món quà đẹp nhất mà cuộc đời có thể dành cho anh. Happy Birthday. ❤️</div>
+                        
+                        <!-- NÚT BẤM KẾT THÚC CHỦ ĐỘNG -->
+                        <button class="btn-end-trigger" onclick="triggerTheEnd()">Khép lại chuyến hành trình</button>
+                    </div>
+                </div>
+
+                <div class="timeline-tag">06.07.2026</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 3. MÀN HÌNH TRẮNG KẾT THÚC ĐIỆN ẢNH -->
+    <div id="the-end-screen">
+        <div class="end-msg-1">"Cảm ơn anh đã đi qua những năm tháng tuổi trẻ cùng em."</div>
+        <div class="end-msg-2">The End.</div>
+        <button class="btn-restart" onclick="restartJourney()">Quay lại từ đầu</button>
+    </div>
+
+    <script>
+        const CORRECT_PASSWORD = "06072003"; 
+        
+        let currentPageNum = 1;
+        let secretTimeout = null;
+
+        function unlockWeb() {
+            const input = document.getElementById("password-input").value.trim();
+            const errorText = document.getElementById("error-text");
+
+            if (input === CORRECT_PASSWORD) {
+                document.getElementById("lock-screen").style.opacity = "0";
+                setTimeout(() => {
+                    document.getElementById("lock-screen").style.display = "none";
+                    // Vào thẳng sân khấu chính không cần hỏi nhạc nữa
+                    document.getElementById("story-stage").style.display = "block";
+                    showPage(1);
+                }, 1000);
+            } else {
+                errorText.innerText = "Ngày sinh chưa chính xác rồi anh ơi, thử lại nha! ❤️";
+            }
+        }
+
+        document.getElementById("password-input").addEventListener("keyup", function(event) {
+            if (event.key === "Enter") { unlockWeb(); }
+        });
+
+        function typeWriterEffect(pageIndex) {
+            const page = document.getElementById(`page-${pageIndex}`);
+            const titleContainer = page.querySelector('.story-title');
+            const fullText = titleContainer.getAttribute('data-text');
+            
+            titleContainer.innerHTML = "";
+            let i = 0;
+            
+            if(window.typeInterval) clearInterval(window.typeInterval);
+
+            window.typeInterval = setInterval(() => {
+                if (i < fullText.length) {
+                    titleContainer.innerHTML += fullText.charAt(i);
+                    i++;
+                } else {
+                    clearInterval(window.typeInterval);
+                }
+            }, 60); 
+        }
+
+        function showPage(pageNum) {
+            currentPageNum = pageNum;
+            const pages = document.querySelectorAll('.story-page');
+            pages.forEach(p => p.classList.remove('active'));
+
+            document.getElementById("secret-ending").classList.remove("show");
+            clearTimeout(secretTimeout);
+
+            const targetPage = document.getElementById(`page-${pageNum}`);
+            targetPage.classList.add('active');
+
+            typeWriterEffect(pageNum);
+
+            if (pageNum === 5) {
+                secretTimeout = setTimeout(() => {
+                    document.getElementById("secret-ending").classList.add("show");
+                    
+                    const descContainer = targetPage.querySelector('.story-desc');
+                    descContainer.scrollTo({
+                        top: descContainer.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }, 5000);
+            }
+        }
+
+        function triggerTheEnd() {
+            document.getElementById("the-end-screen").classList.add("show");
+        }
+
+        function nextPage(num) { showPage(num); }
+        function prevPage(num) { showPage(num); }
+
+        function restartJourney() {
+            document.getElementById("the-end-screen").classList.remove("show");
+            showPage(1);
+        }
+    </script>
+</body>
+</html>
